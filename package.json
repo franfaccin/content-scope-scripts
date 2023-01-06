@@ -27,9 +27,12 @@
   "type": "module",
   "dependencies": {
     "seedrandom": "^3.0.5",
-    "sjcl": "^1.0.8"
+    "sjcl": "^1.0.8",
+    "uhtml": "^3.1.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.20.12",
+    "@babel/eslint-parser": "^7.19.1",
     "@canvas/image-data": "^1.0.0",
     "@fingerprintjs/fingerprintjs": "^3.3.6",
     "@rollup/plugin-commonjs": "^23.0.3",
@@ -40,9 +43,12 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-node": "^11.1.0",
     "jasmine": "^4.5.0",
+    "postcss": "^8.4.20",
     "puppeteer": "^19.3.0",
     "rollup": "^3.5.0",
     "rollup-plugin-dynamic-import-variables": "^1.1.0",
+    "rollup-plugin-postcss": "^4.0.2",
+    "sass": "^1.57.1",
     "typescript": "^4.8.4"
   }
 }

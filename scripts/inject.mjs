@@ -1,22 +1,31 @@
-import { readFile } from 'fs/promises';
-import * as rollup from 'rollup';
-import commonjs from '@rollup/plugin-commonjs';
-import replace from '@rollup/plugin-replace';
-import resolve from '@rollup/plugin-node-resolve';
-import dynamicImportVariables from 'rollup-plugin-dynamic-import-variables';
+import { readFile } from 'fs/promises'
+import * as rollup from 'rollup'
+import commonjs from '@rollup/plugin-commonjs'
+import replace from '@rollup/plugin-replace'
+import resolve from '@rollup/plugin-node-resolve'
+import postcss from 'rollup-plugin-postcss'
+import dynamicImportVariables from 'rollup-plugin-dynamic-import-variables'
 
-const contentScopePath = 'src/content-scope-features.js';
-const contentScopeName = 'contentScopeFeatures';
+const contentScopePath = 'src/content-scope-features.js'
+const contentScopeName = 'contentScopeFeatures'
 
-async function rollupScript(scriptPath, name) {
-    let mozProxies = false;
+async function rollupScript (scriptPath, name) {
+    let mozProxies = false
     // The code is using a global, that we define here which means once tree shaken we get a browser specific output.
-    if (process.argv[2] == "firefox") {
-        mozProxies = true;
+    if (process.argv[2] == 'firefox') {
+        mozProxies = true
     }
     const inputOptions = {
         input: scriptPath,
         plugins: [
+            postcss({
+                inject: false,
+                extract: false,
+                modules: false,
+                minimize: true,
+                loaders: ['sass-loader'],
+                use: ['sass']
+            }),
             resolve(),
             dynamicImportVariables({}),
             commonjs(),
@@ -27,7 +36,7 @@ async function rollupScript(scriptPath, name) {
                 }
             })
         ]
-    };
+    }
     const outputOptions = {
         dir: 'build',
         format: 'iife',
@@ -35,52 +44,52 @@ async function rollupScript(scriptPath, name) {
         name: name,
         // This if for seedrandom causing build issues
         globals: { crypto: 'undefined' }
-    };
+    }
 
-    const bundle = await rollup.rollup(inputOptions);
-    const generated = await bundle.generate(outputOptions);
-    return generated.output[0].code;
+    const bundle = await rollup.rollup(inputOptions)
+    const generated = await bundle.generate(outputOptions)
+    return generated.output[0].code
 }
 
-async function init() {
+async function init () {
     if (process.argv.length != 3) {
-        throw new Error("Specify the build type as an argument to this script.");
+        throw new Error('Specify the build type as an argument to this script.')
     }
-    if (process.argv[2] == "firefox") {
-        initOther('inject/mozilla.js', process.argv[2]);
-    } else if (process.argv[2] == "apple") {
-        initOther('inject/apple.js', process.argv[2]);
-    } else if (process.argv[2] == "android") {
-        initOther('inject/android.js', process.argv[2]);
-    } else if (process.argv[2] == "windows") {
-        initOther('inject/windows.js', process.argv[2]);
-    } else if (process.argv[2] == "integration") {
-        initOther('inject/integration.js', process.argv[2]);
+    if (process.argv[2] == 'firefox') {
+        initOther('inject/mozilla.js', process.argv[2])
+    } else if (process.argv[2] == 'apple') {
+        initOther('inject/apple.js', process.argv[2])
+    } else if (process.argv[2] == 'android') {
+        initOther('inject/android.js', process.argv[2])
+    } else if (process.argv[2] == 'windows') {
+        initOther('inject/windows.js', process.argv[2])
+    } else if (process.argv[2] == 'integration') {
+        initOther('inject/integration.js', process.argv[2])
     } else if (process.argv[2] == 'chrome-mv3') {
-        initOther('inject/chrome-mv3.js', 'chrome_mv3');
+        initOther('inject/chrome-mv3.js', 'chrome_mv3')
     } else {
-        initChrome();
+        initChrome()
     }
 }
 
-async function initOther(injectScriptPath, platformName) {
-    const replaceString = "/* global contentScopeFeatures */";
-    const injectScript = await rollupScript(injectScriptPath, `inject${platformName}`);
-    const contentScope = await rollupScript(contentScopePath, contentScopeName);
-    const outputScript = injectScript.toString().replace(replaceString, contentScope.toString());
-    console.log(outputScript);
+async function initOther (injectScriptPath, platformName) {
+    const replaceString = '/* global contentScopeFeatures */'
+    const injectScript = await rollupScript(injectScriptPath, `inject${platformName}`)
+    const contentScope = await rollupScript(contentScopePath, contentScopeName)
+    const outputScript = injectScript.toString().replace(replaceString, contentScope.toString())
+    console.log(outputScript)
 }
 
-async function initChrome() {
-    const replaceString = "/* global contentScopeFeatures */";
-    const injectScriptPath = "inject/chrome.js";
-    const injectScript = await readFile(injectScriptPath);
-    const contentScope = await rollupScript(contentScopePath, contentScopeName);
+async function initChrome () {
+    const replaceString = '/* global contentScopeFeatures */'
+    const injectScriptPath = 'inject/chrome.js'
+    const injectScript = await readFile(injectScriptPath)
+    const contentScope = await rollupScript(contentScopePath, contentScopeName)
     // Encode in URI format to prevent breakage (we could choose to just escape ` instead)
     // NB: .replace(/\r\n/g, "\n") is needed because in Windows rollup generates CRLF line endings
-    const encodedString = encodeURI(contentScope.toString().replace(/\r\n/g, "\n"));
-    const outputScript = injectScript.toString().replace(replaceString, '${decodeURI("' + encodedString + '")}');
-    console.log(outputScript);
+    const encodedString = encodeURI(contentScope.toString().replace(/\r\n/g, '\n'))
+    const outputScript = injectScript.toString().replace(replaceString, '${decodeURI("' + encodedString + '")}')
+    console.log(outputScript)
 }
 
-init();
+init()

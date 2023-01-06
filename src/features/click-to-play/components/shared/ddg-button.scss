@@ -1,0 +1,52 @@
+.ddg-button {
+  border-radius: 8px;
+
+  padding: 11px 22px;
+  font-weight: bold;
+  margin: 0px auto;
+  border-color: #3969ef;
+  border: none;
+
+  font-family: DuckDuckGoPrivacyEssentialsBold;
+  font-size: 14px;
+
+  position: relative;
+  cursor: pointer;
+  box-shadow: none;
+  z-index: 2147483646;
+
+  & > * {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  &.primary {
+    background: #3969ef;
+  }
+  &.primary > * {
+    color: #ffffff;
+  }
+  &.primary:hover {
+    background: #2b55ca;
+  }
+  &.primary:active {
+    background: #1e42a4;
+  }
+
+  &.secondary {
+    background: rgba(34, 34, 34, 0.1);
+  }
+  &.secondary > * {
+    color: #222222;
+  }
+  &.secondary:hover {
+    background: rgba(0, 0, 0, 0.12);
+  }
+  &.secondary:active {
+    background: rgba(0, 0, 0, 0.18);
+  }
+}
