@@ -2,6 +2,7 @@ import { createCustomEvent, sendMessage, originalWindowDispatchEvent } from '../
 import { logoImg, loadingImages, closeIcon } from './click-to-load/ctl-assets.js'
 import { getStyles, getConfig } from './click-to-load/ctl-config.js'
 import ContentFeature from '../content-feature.js'
+import { DDGCtlFbLoginBtn } from './click-to-load/components/ctl-fb-login-btn.js'
 
 /**
  * @typedef {'darkMode' | 'lightMode' | 'loginMode' | 'cancelMode'} displayMode
@@ -533,13 +534,17 @@ function createPlaceholderElementAndReplace (widget, trackingElement) {
 
     if (widget.replaceSettings.type === 'loginButton') {
         const icon = widget.replaceSettings.icon
-        // Create a button to replace old element
-        const { button, container } = makeLoginButton(
-            widget.replaceSettings.buttonText, widget.getMode(),
-            widget.replaceSettings.popupBodyText, icon, trackingElement
-        )
-        button.addEventListener('click', widget.clickFunction(trackingElement, container))
-        replaceTrackingElement(widget, trackingElement, container)
+        const facebookLoginButton = new DDGCtlFbLoginBtn({
+            devMode: devMode,
+	        text: widget.replaceSettings.buttonText,
+	        hoverText: widget.replaceSettings.popupBodyText,
+	        blockedIcon: icon,
+	        originalElement: trackingElement,
+	        sharedStrings,
+            onButtonClick: widget.clickFunction.bind(widget)
+        })
+        facebookLoginButton.classList.add('fb-login-button', 'FacebookLogin__button');
+        replaceTrackingElement(widget, trackingElement, facebookLoginButton)
     }
 
     // Facebook
@@ -1004,19 +1009,6 @@ function makeToggleButtonWithText (text, mode, isActive = false, toggleClassName
 }
 
 /**
- * Create the default block symbol, for when the image isn't available.
- * @returns {HTMLDivElement}
- */
-function makeDefaultBlockIcon () {
-    const blockedIcon = document.createElement('div')
-    const dash = document.createElement('div')
-    blockedIcon.appendChild(dash)
-    blockedIcon.style.cssText = styles.circle
-    dash.style.cssText = styles.rectangle
-    return blockedIcon
-}
-
-/**
  * Creates a share feedback link element.
  * @returns {HTMLAnchorElement}
  */
@@ -1047,107 +1039,6 @@ function makeShareFeedbackRow () {
     feedbackRow.appendChild(feedbackLink)
 
     return feedbackRow
-}
-
-/**
- * Creates a placeholder Facebook login button. When clicked, a warning dialog
- * is displayed to the user. The login flow only continues if the user clicks to
- * proceed.
- * @param {string} buttonText
- * @param {displayMode} mode
- * @param {string} hoverTextBody
- *   The hover text to display for the button.
- * @param {string?} icon
- *   The source of the icon to display in the button, if null the default block
- *   icon is used instead.
- * @param {HTMLElement} originalElement
- *   The original Facebook login button that this placeholder is replacing.
- *   Note: This function does not actually replace the button, the caller is
- *         expected to do that.
- * @returns {{ container: HTMLDivElement, button: HTMLButtonElement }}
- */
-function makeLoginButton (buttonText, mode, hoverTextBody, icon, originalElement) {
-    const container = document.createElement('div')
-    container.style.cssText = 'position: relative;'
-    container.appendChild(makeFontFaceStyleElement())
-
-    const shadowRoot = container.attachShadow({ mode: devMode ? 'open' : 'closed' })
-    // inherit any class styles on the button
-    container.className = 'fb-login-button FacebookLogin__button'
-    const { styleElement } = makeBaseStyleElement(mode)
-    styleElement.textContent += `
-        #DuckDuckGoPrivacyEssentialsHoverableText {
-            display: none;
-        }
-        #DuckDuckGoPrivacyEssentialsHoverable:hover #DuckDuckGoPrivacyEssentialsHoverableText {
-            display: block;
-        }
-    `
-    shadowRoot.appendChild(styleElement)
-
-    const hoverContainer = document.createElement('div')
-    hoverContainer.id = 'DuckDuckGoPrivacyEssentialsHoverable'
-    hoverContainer.style.cssText = styles.hoverContainer
-    shadowRoot.appendChild(hoverContainer)
-
-    // Make the button
-    const button = makeButton(buttonText, mode)
-    // Add blocked icon
-    if (!icon) {
-        button.appendChild(makeDefaultBlockIcon())
-    } else {
-        const imgElement = document.createElement('img')
-        imgElement.style.cssText = styles.loginIcon
-        imgElement.setAttribute('src', icon)
-        imgElement.setAttribute('height', '28px')
-        button.appendChild(imgElement)
-    }
-    hoverContainer.appendChild(button)
-
-    // hover action
-    const hoverBox = document.createElement('div')
-    hoverBox.id = 'DuckDuckGoPrivacyEssentialsHoverableText'
-    hoverBox.style.cssText = styles.textBubble
-    const arrow = document.createElement('div')
-    arrow.style.cssText = styles.textArrow
-    hoverBox.appendChild(arrow)
-    const branding = createTitleRow('DuckDuckGo')
-    branding.style.cssText += styles.hoverTextTitle
-    hoverBox.appendChild(branding)
-    const hoverText = document.createElement('div')
-    hoverText.style.cssText = styles.hoverTextBody
-    hoverText.textContent = hoverTextBody + ' '
-    hoverText.appendChild(getLearnMoreLink(mode))
-    hoverBox.appendChild(hoverText)
-
-    hoverContainer.appendChild(hoverBox)
-    const rect = originalElement.getBoundingClientRect()
-
-    // The left side of the hover popup may go offscreen if the
-    // login button is all the way on the left side of the page. This
-    // If that is the case, dynamically shift the box right so it shows
-    // properly.
-    if (rect.left < styles.textBubbleLeftShift) {
-        const leftShift = -rect.left + 10 // 10px away from edge of the screen
-        hoverBox.style.cssText += `left: ${leftShift}px;`
-        const change = (1 - (rect.left / styles.textBubbleLeftShift)) * (100 - styles.arrowDefaultLocationPercent)
-        arrow.style.cssText += `left: ${Math.max(10, styles.arrowDefaultLocationPercent - change)}%;`
-    } else if (rect.left + styles.textBubbleWidth - styles.textBubbleLeftShift > window.innerWidth) {
-        const rightShift = rect.left + styles.textBubbleWidth - styles.textBubbleLeftShift
-        const diff = Math.min(rightShift - window.innerWidth, styles.textBubbleLeftShift)
-        const rightMargin = 20 // Add some margin to the page, so scrollbar doesn't overlap.
-        hoverBox.style.cssText += `left: -${styles.textBubbleLeftShift + diff + rightMargin}px;`
-        const change = ((diff / styles.textBubbleLeftShift)) * (100 - styles.arrowDefaultLocationPercent)
-        arrow.style.cssText += `left: ${Math.max(10, styles.arrowDefaultLocationPercent + change)}%;`
-    } else {
-        hoverBox.style.cssText += `left: -${styles.textBubbleLeftShift}px;`
-        arrow.style.cssText += `left: ${styles.arrowDefaultLocationPercent}%;`
-    }
-
-    return {
-        button,
-        container
-    }
 }
 
 /**
