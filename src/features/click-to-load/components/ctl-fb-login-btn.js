@@ -128,7 +128,7 @@ export class DDGCtlFbLoginBtn extends HTMLElement {
 
     container
       .querySelector(".ddg-ctl-fb-login-btn")
-      .addEventListener("click", onButtonClick(originalElement, container));
+      .addEventListener("click", onButtonClick(originalElement, this));
 
     return container;
   }
