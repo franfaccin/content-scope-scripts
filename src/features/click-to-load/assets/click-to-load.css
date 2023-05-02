@@ -204,6 +204,7 @@
 
 .ddg-fb-login-container {
   position: relative;
+  margin: auto;
 }
 .ddg-fb-login-icon {
   position: absolute;
